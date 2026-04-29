@@ -9,6 +9,20 @@
 indicator("Combined ICT Toolkit", "ICT Toolkit", true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500, max_bars_back = 5000)
 
 // ══════════════════════════════════════════════════════════════════════
+//  PRESET SYSTEM — Quick Setup
+//  Pilih preset instrument & TF untuk auto-configure setting
+//  "Manual" = gunakan setting individual di bawah
+// ══════════════════════════════════════════════════════════════════════
+var g_PRESET = "⓪ Preset — Quick Setup"
+preset_instrument = input.string("Manual", "Instrument Preset", options = ["Manual", "Forex Major", "Forex Cross", "Altcoin", "Major Crypto", "Gold", "Oil", "Saham IDX", "Saham US"], group = g_PRESET, tooltip = "Pilih preset instrument untuk auto-configure setting optimal.\n'Manual' = semua setting di bawah aktif.")
+preset_tf = input.string("Auto-Detect", "Timeframe Preset", options = ["Auto-Detect", "M15", "H4", "D1"], group = g_PRESET, tooltip = "Pilih timeframe trading.\n'Auto-Detect' = deteksi otomatis dari chart timeframe.")
+
+_p_m15 = preset_tf == "M15" or (preset_tf == "Auto-Detect" and timeframe.isminutes and timeframe.multiplier <= 15)
+_p_h4  = preset_tf == "H4"  or (preset_tf == "Auto-Detect" and timeframe.isminutes and timeframe.multiplier > 15 and timeframe.multiplier <= 240)
+_p_d1  = preset_tf == "D1"  or (preset_tf == "Auto-Detect" and not timeframe.isminutes)
+_p_on  = preset_instrument != "Manual"
+
+// ══════════════════════════════════════════════════════════════════════
 //  SHARED UTILITY FUNCTIONS
 // ══════════════════════════════════════════════════════════════════════
 get_line_type(_style) =>
@@ -182,6 +196,14 @@ v2              = input.session("0800-0801", "", inline = "V2", group = g_VERT)
 v2_color        = input.color(color.black, "", inline = "V2", group = g_VERT)
 vl_style        = get_line_type(input.string('Dotted', "Style", options = ['Solid', 'Dotted', 'Dashed'], inline = "V0", group = g_VERT))
 vl_width        = input.int(1, "", inline = "V0", group = g_VERT)
+
+// --- Preset Override: Killzones ---
+kz_enabled := _p_on and preset_instrument == "Saham IDX" ? false : kz_enabled
+use_asia   := _p_on and (preset_instrument == "Saham US" or preset_instrument == "Saham IDX") ? false : use_asia
+use_london := _p_on and (preset_instrument == "Saham US" or preset_instrument == "Saham IDX") ? false : use_london
+use_nyam   := _p_on and preset_instrument == "Saham IDX" ? false : use_nyam
+use_nylu   := _p_on and preset_instrument == "Saham IDX" ? false : use_nylu
+use_nypm   := _p_on and preset_instrument == "Saham IDX" ? false : use_nypm
 
 // --- Killzone Types & Variables ---
 type kz
@@ -620,6 +642,10 @@ dwm_projections     = input(false, "Show Projections", inline = "head", group = 
 dwm_right_offset    = input.int(20, "", 1, inline = "head", group = g_DWM_HL)
 dwm_gradient        = input(true, "Show Gradient", group = g_DWM_HL)
 
+// --- Preset Override: DWM H/L ---
+dwm_daily_lookback  := _p_on ? (_p_d1 ? 1 : preset_instrument == "Saham IDX" ? 3 : 2) : dwm_daily_lookback
+dwm_weekly_lookback := _p_on ? (preset_instrument == "Saham IDX" ? 2 : 1) : dwm_weekly_lookback
+
 var a_lastHighs = array.new_float(3)
 var a_lastLows  = array.new_float(3)
 var canShowDwmDaily   = dwm_daily_on and timeframe.isintraday
@@ -712,6 +738,16 @@ var g_VWAP = "③ VWAP Settings"
 show_vwap       = input.bool(true, "Show VWAP", group = g_VWAP)
 vwap_source     = input.source(hlc3, "VWAP Source", group = g_VWAP)
 vwap_anchor     = input.string("Session", "VWAP Anchor", options = ["Session", "Week", "Month"], group = g_VWAP)
+
+// --- Preset Override: EMA & VWAP ---
+ema_len1 := _p_on ? (_p_m15 ? 9 : _p_h4 ? (preset_instrument == "Altcoin" ? 9 : 12) : (preset_instrument == "Altcoin" ? 12 : 20)) : ema_len1
+ema_len2 := _p_on ? (_p_m15 ? (preset_instrument == "Saham IDX" ? 20 : 21) : _p_h4 ? (preset_instrument == "Altcoin" ? 21 : 26) : (preset_instrument == "Altcoin" ? 26 : 50)) : ema_len2
+ema_len3 := _p_on ? (_p_m15 ? 50 : _p_h4 ? (preset_instrument == "Altcoin" ? 50 : 100) : (preset_instrument == "Altcoin" ? 50 : 100)) : ema_len3
+ema_len4 := _p_on ? 200 : ema_len4
+ema_short_tf  := _p_on ? (_p_m15 ? "60" : _p_h4 ? "240" : "1D") : ema_short_tf
+ema_medium_tf := _p_on ? (_p_m15 ? "240" : _p_h4 ? "1D" : "1W") : ema_medium_tf
+ema_long_tf   := _p_on ? (_p_m15 ? "1D" : _p_h4 ? "1W" : "1M") : ema_long_tf
+vwap_anchor   := _p_on ? (_p_m15 ? "Session" : _p_h4 ? "Week" : "Month") : vwap_anchor
 
 // --- Current TF EMAs ---
 ema_ctf_1 = ta.ema(ema_source, ema_len1)
@@ -847,6 +883,16 @@ htfc_candle_width = input.int(1, 'Candle Width', minval = 1, maxval = 4, group =
 
 htfc_fvg_show    = input.bool(true, 'Fair Value Gap', inline = 'htfc_fvg', group = g_HTFC_STYLE)
 htfc_fvg_color   = input.color(color.new(color.gray, 80), '', inline = 'htfc_fvg', group = g_HTFC_STYLE)
+
+// --- Preset Override: HTF Candles ---
+htfc1_tf  := _p_on ? (_p_m15 ? "60" : _p_h4 ? "1D" : "1W") : htfc1_tf
+htfc1_max := _p_on ? (_p_m15 ? 10 : _p_h4 ? 10 : 5) : htfc1_max
+htfc2_tf  := _p_on ? (_p_m15 ? "240" : _p_h4 ? "1W" : "1M") : htfc2_tf
+htfc2_max := _p_on ? (_p_m15 ? 6 : _p_h4 ? 5 : 3) : htfc2_max
+htfc3_tf  := _p_on ? (_p_m15 ? "1D" : "1W") : htfc3_tf
+htfc3_max := _p_on ? (_p_m15 ? 5 : 3) : htfc3_max
+htfc3_show := _p_on and not _p_m15 ? false : htfc3_show
+htfc4_show := _p_on and not _p_m15 ? false : htfc4_show
 
 // --- HTF Candle Sets ---
 var array<HTFCandle> htfc_candles_1 = array.new<HTFCandle>(0)
