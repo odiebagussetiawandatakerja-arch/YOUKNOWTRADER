@@ -1,6 +1,7 @@
 # 🔥 Bot Telegram — Top Trending Hotel & Atraksi
 
 Bot Telegram untuk menampilkan hotel dan atraksi yang sedang trending/terlaris di Jawa Timur.
+**Auto-scrape harian** — data otomatis di-update setiap hari dari search engine.
 
 ## Kota Tersedia
 - **Surabaya** — 2.288 hotel, wisata kota
@@ -10,6 +11,16 @@ Bot Telegram untuk menampilkan hotel dan atraksi yang sedang trending/terlaris d
 
 ## Sumber Data
 - Traveloka, Booking.com, Agoda, Trip.com, Klook, Tiket.com, Trivago, TripAdvisor
+- Data di-scrape via search engine (DuckDuckGo) untuk menghindari anti-bot platform OTA
+
+## Arsitektur
+```
+bot.py          — Telegram bot handlers & scheduler
+data.py         — Curated seed data (initial/fallback)
+database.py     — SQLite storage (hotels, attractions, scrape logs)
+scraper.py      — Search-based scraper (DuckDuckGo → parse hotel/attraction data)
+requirements.txt
+```
 
 ## Perintah Bot
 | Perintah | Fungsi |
@@ -19,7 +30,22 @@ Bot Telegram untuk menampilkan hotel dan atraksi yang sedang trending/terlaris d
 | `/hotel [kota]` | Semua hotel trending di kota |
 | `/atraksi [kota]` | Semua atraksi trending di kota |
 | `/semua` | Ringkasan semua kota |
+| `/status` | Lihat status last update & jumlah data |
+| `/refresh` | Manual trigger scraping data terbaru |
 | `/help` | Panduan bot |
+
+## Fitur Auto-Update
+- **Scheduled scrape** — setiap hari jam 06:00 WIB (configurable via env var)
+- **Manual refresh** — ketik `/refresh` untuk force update kapan saja
+- **SQLite database** — data tersimpan persisten, survive restart
+- **Fallback** — kalau DB kosong, pakai curated data sebagai backup
+
+### Environment Variables
+| Variable | Default | Keterangan |
+|----------|---------|------------|
+| `TELEGRAM_BOT_TOKEN` | (required) | Token dari @BotFather |
+| `SCRAPE_HOUR` | `6` | Jam scrape harian (0-23) |
+| `SCRAPE_MINUTE` | `0` | Menit scrape harian (0-59) |
 
 ## Cara Menjalankan
 
@@ -42,7 +68,8 @@ Buka bot kamu di Telegram, ketik `/start` dan pilih kota!
 
 ```
 🔥 TOP TRENDING — SURABAYA
-📅 01 May 2026
+📅 2026-05-01T02:28
+🕐 Auto-update setiap hari jam 06:00 WIB
 
 🏨 Top 5 Hotel:
 
@@ -61,8 +88,9 @@ Buka bot kamu di Telegram, ketik `/start` dan pilih kota!
 ```
 
 ## Pengembangan Selanjutnya
-- [ ] Web scraping real-time dari platform OTA
-- [ ] Scheduled daily update (auto-scrape setiap hari)
+- [x] ~~Web scraping dari platform OTA~~ (via search engine)
+- [x] ~~Scheduled daily update~~ (APScheduler, jam 06:00 WIB)
 - [ ] Notifikasi otomatis ke channel/group
 - [ ] Tambah kota lain di Jawa Timur
 - [ ] Filter berdasarkan harga, rating, platform
+- [ ] Deploy ke Railway/Fly.io untuk 24/7
