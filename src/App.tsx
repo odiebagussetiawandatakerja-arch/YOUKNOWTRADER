@@ -1,9 +1,12 @@
 import { useEffect } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { Toaster } from '@/components/ui/sonner';
+import { TrendingNotificationProvider } from '@/contexts/TrendingNotificationContext';
 import Navigation from '@/components/Navigation';
 import HeroSection from '@/sections/HeroSection';
 import WhatIDoSection from '@/sections/WhatIDoSection';
+import TrendingBotSection from '@/sections/TrendingBotSection';
 import PerformanceSection from '@/sections/PerformanceSection';
 import BenefitsSection from '@/sections/BenefitsSection';
 import StrategySection from '@/sections/StrategySection';
@@ -71,8 +74,10 @@ function App() {
   }, []);
 
   return (
+    <TrendingNotificationProvider>
     <div className="relative bg-navy min-h-screen">
       <Navigation />
+      <Toaster position="top-right" />
 
       <main className="relative">
         {/* Section 1: Hero - pin: true, z-10 */}
@@ -82,6 +87,9 @@ function App() {
 
         {/* Section 2: What I Do - pin: false */}
         <WhatIDoSection />
+
+        {/* Section 2.5: Trending Bot - pin: false */}
+        <TrendingBotSection />
 
         {/* Section 3: Performance - pin: true, z-20 */}
         <div className="relative z-20">
@@ -114,6 +122,7 @@ function App() {
         <FinalCTASection />
       </main>
     </div>
+    </TrendingNotificationProvider>
   );
 }
 
